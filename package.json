@@ -1,0 +1,18 @@
+{
+  "name": "html-css",
+  "version": "1.0.0",
+  "description": "Freight tracker Geofencing",
+  "main": "index.html",
+  "scripts": {
+    "start": "serve"
+  },
+  "keywords": [
+    "html",
+    "css"
+  ],
+  "author": "Juven Fieldad",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "11.2.0"
+  }
+}
