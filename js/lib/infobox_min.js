@@ -1,4 +1,497 @@
 /**
  * https://github.com/geocodezip/v3-utility-library/tree/master/archive/infobox
-*/
-function InfoBox(t){t=t||{},google.maps.OverlayView.apply(this,arguments),this.content_=t.content||"",this.disableAutoPan_=t.disableAutoPan||!1,this.maxWidth_=t.maxWidth||0,this.pixelOffset_=t.pixelOffset||new google.maps.Size(0,0),this.position_=t.position||new google.maps.LatLng(0,0),this.zIndex_=t.zIndex||null,this.boxClass_=t.boxClass||"infoBox",this.boxStyle_=t.boxStyle||{},this.closeBoxMargin_=t.closeBoxMargin||"2px",this.closeBoxURL_=t.closeBoxURL||"//www.google.com/intl/en_us/mapfiles/close.gif",""===t.closeBoxURL&&(this.closeBoxURL_=""),this.closeBoxTitle_=t.closeBoxTitle||" Close ",this.infoBoxClearance_=t.infoBoxClearance||new google.maps.Size(1,1),void 0===t.visible&&(void 0===t.isHidden?t.visible=!0:t.visible=!t.isHidden),this.isHidden_=!t.visible,this.alignBottom_=t.alignBottom||!1,this.pane_=t.pane||"floatPane",this.enableEventPropagation_=t.enableEventPropagation||!1,this.div_=null,this.closeListener_=null,this.moveListener_=null,this.contextListener_=null,this.eventListeners_=null,this.fixedWidthSet_=null}InfoBox.prototype=new google.maps.OverlayView,InfoBox.prototype.createInfoBoxDiv_=function(){var t,i,e,o=this,s=function(t){t.cancelBubble=!0,t.stopPropagation&&t.stopPropagation()};if(!this.div_){if(this.div_=document.createElement("div"),this.setBoxStyle_(),void 0===this.content_.nodeType?this.div_.innerHTML=this.getCloseBoxImg_()+this.content_:(this.div_.innerHTML=this.getCloseBoxImg_(),this.div_.appendChild(this.content_)),this.getPanes()[this.pane_].appendChild(this.div_),this.addClickHandler_(),this.div_.style.width?this.fixedWidthSet_=!0:0!==this.maxWidth_&&this.div_.offsetWidth>this.maxWidth_?(this.div_.style.width=this.maxWidth_,this.div_.style.overflow="auto",this.fixedWidthSet_=!0):(e=this.getBoxWidths_(),this.div_.style.width=this.div_.offsetWidth-e.left-e.right+"px",this.fixedWidthSet_=!1),this.panBox_(this.disableAutoPan_),!this.enableEventPropagation_){for(this.eventListeners_=[],i=["mousedown","mouseover","mouseout","mouseup","click","dblclick","touchstart","touchend","touchmove"],t=0;t<i.length;t++)this.eventListeners_.push(google.maps.event.addDomListener(this.div_,i[t],s));this.eventListeners_.push(google.maps.event.addDomListener(this.div_,"mouseover",function(t){this.style.cursor="default"}))}this.contextListener_=google.maps.event.addDomListener(this.div_,"contextmenu",function(t){t.returnValue=!1,t.preventDefault&&t.preventDefault(),o.enableEventPropagation_||s(t)}),google.maps.event.trigger(this,"domready")}},InfoBox.prototype.getCloseBoxImg_=function(){var t="";return""!==this.closeBoxURL_&&(t="<img",t+=" src='"+this.closeBoxURL_+"'",t+=" align=right",t+=" title='"+this.closeBoxTitle_+"'",t+=" style='",t+=" position: relative;",t+=" cursor: pointer;",t+=" margin: "+this.closeBoxMargin_+";",t+="'>"),t},InfoBox.prototype.addClickHandler_=function(){var t;""!==this.closeBoxURL_?(t=this.div_.firstChild,this.closeListener_=google.maps.event.addDomListener(t,"click",this.getCloseClickHandler_())):this.closeListener_=null},InfoBox.prototype.getCloseClickHandler_=function(){var t=this;return function(i){i.cancelBubble=!0,i.stopPropagation&&i.stopPropagation(),google.maps.event.trigger(t,"closeclick"),t.close()}},InfoBox.prototype.panBox_=function(t){var i,e=0,o=0;if(!t&&(i=this.getMap())instanceof google.maps.Map){i.getBounds().contains(this.position_)||i.setCenter(this.position_);var s=this.pixelOffset_.width,n=this.pixelOffset_.height,h=this.div_.offsetWidth,l=this.div_.offsetHeight,d=this.infoBoxClearance_.width,r=this.infoBoxClearance_.height;if(2==i.panToBounds.length){var a={left:0,right:0,top:0,bottom:0};a.left=-s+d,a.right=s+h+d,this.alignBottom_?(a.top=-n+r+l,a.bottom=n+r):(a.top=-n+r,a.bottom=n+l+r),i.panToBounds(new google.maps.LatLngBounds(this.position_),a)}else{var _=i.getDiv(),p=_.offsetWidth,v=_.offsetHeight,f=this.getProjection().fromLatLngToContainerPixel(this.position_);if(f.x<-s+d?e=f.x+s-d:f.x+h+s+d>p&&(e=f.x+h+s+d-p),this.alignBottom_?f.y<-n+r+l?o=f.y+n-r-l:f.y+n+r>v&&(o=f.y+n+r-v):f.y<-n+r?o=f.y+n-r:f.y+l+n+r>v&&(o=f.y+l+n+r-v),0!==e||0!==o){i.getCenter();i.panBy(e,o)}}}},InfoBox.prototype.setBoxStyle_=function(){var t,i;if(this.div_){for(t in this.div_.className=this.boxClass_,this.div_.style.cssText="",i=this.boxStyle_)i.hasOwnProperty(t)&&(this.div_.style[t]=i[t]);(void 0===this.div_.style.WebkitTransform||-1===this.div_.style.WebkitTransform.indexOf("translateZ")&&-1===this.div_.style.WebkitTransform.indexOf("matrix"))&&(this.div_.style.WebkitTransform="translateZ(0)"),void 0!==this.div_.style.opacity&&""!==this.div_.style.opacity&&(this.div_.style.MsFilter='"progid:DXImageTransform.Microsoft.Alpha(Opacity='+100*this.div_.style.opacity+')"',this.div_.style.filter="alpha(opacity="+100*this.div_.style.opacity+")"),this.div_.style.position="absolute",this.div_.style.visibility="hidden",null!==this.zIndex_&&(this.div_.style.zIndex=this.zIndex_)}},InfoBox.prototype.getBoxWidths_=function(){var t,i={top:0,bottom:0,left:0,right:0},e=this.div_;return document.defaultView&&document.defaultView.getComputedStyle?(t=e.ownerDocument.defaultView.getComputedStyle(e,""))&&(i.top=parseInt(t.borderTopWidth,10)||0,i.bottom=parseInt(t.borderBottomWidth,10)||0,i.left=parseInt(t.borderLeftWidth,10)||0,i.right=parseInt(t.borderRightWidth,10)||0):document.documentElement.currentStyle&&e.currentStyle&&(i.top=parseInt(e.currentStyle.borderTopWidth,10)||0,i.bottom=parseInt(e.currentStyle.borderBottomWidth,10)||0,i.left=parseInt(e.currentStyle.borderLeftWidth,10)||0,i.right=parseInt(e.currentStyle.borderRightWidth,10)||0),i},InfoBox.prototype.onRemove=function(){this.div_&&(this.div_.parentNode.removeChild(this.div_),this.div_=null)},InfoBox.prototype.draw=function(){this.createInfoBoxDiv_();var t=this.getProjection().fromLatLngToDivPixel(this.position_);this.div_.style.left=t.x+this.pixelOffset_.width+"px",this.alignBottom_?this.div_.style.bottom=-(t.y+this.pixelOffset_.height)+"px":this.div_.style.top=t.y+this.pixelOffset_.height+"px",this.isHidden_?this.div_.style.visibility="hidden":this.div_.style.visibility="visible"},InfoBox.prototype.setOptions=function(t){void 0!==t.boxClass&&(this.boxClass_=t.boxClass,this.setBoxStyle_()),void 0!==t.boxStyle&&(this.boxStyle_=t.boxStyle,this.setBoxStyle_()),void 0!==t.content&&this.setContent(t.content),void 0!==t.disableAutoPan&&(this.disableAutoPan_=t.disableAutoPan),void 0!==t.maxWidth&&(this.maxWidth_=t.maxWidth),void 0!==t.pixelOffset&&(this.pixelOffset_=t.pixelOffset),void 0!==t.alignBottom&&(this.alignBottom_=t.alignBottom),void 0!==t.position&&this.setPosition(t.position),void 0!==t.zIndex&&this.setZIndex(t.zIndex),void 0!==t.closeBoxMargin&&(this.closeBoxMargin_=t.closeBoxMargin),void 0!==t.closeBoxURL&&(this.closeBoxURL_=t.closeBoxURL),void 0!==t.closeBoxTitle&&(this.closeBoxTitle_=t.closeBoxTitle),void 0!==t.infoBoxClearance&&(this.infoBoxClearance_=t.infoBoxClearance),void 0!==t.isHidden&&(this.isHidden_=t.isHidden),void 0!==t.visible&&(this.isHidden_=!t.visible),void 0!==t.enableEventPropagation&&(this.enableEventPropagation_=t.enableEventPropagation),this.div_&&this.draw()},InfoBox.prototype.setContent=function(t){this.content_=t,this.div_&&(this.closeListener_&&(google.maps.event.removeListener(this.closeListener_),this.closeListener_=null),this.fixedWidthSet_||(this.div_.style.width=""),void 0===t.nodeType?this.div_.innerHTML=this.getCloseBoxImg_()+t:(this.div_.innerHTML=this.getCloseBoxImg_(),this.div_.appendChild(t)),this.fixedWidthSet_||(this.div_.style.width=this.div_.offsetWidth+"px",void 0===t.nodeType?this.div_.innerHTML=this.getCloseBoxImg_()+t:(this.div_.innerHTML=this.getCloseBoxImg_(),this.div_.appendChild(t))),this.addClickHandler_()),google.maps.event.trigger(this,"content_changed")},InfoBox.prototype.setPosition=function(t){this.position_=t,this.div_&&this.draw(),google.maps.event.trigger(this,"position_changed")},InfoBox.prototype.setZIndex=function(t){this.zIndex_=t,this.div_&&(this.div_.style.zIndex=t),google.maps.event.trigger(this,"zindex_changed")},InfoBox.prototype.setVisible=function(t){this.isHidden_=!t,this.div_&&(this.div_.style.visibility=this.isHidden_?"hidden":"visible")},InfoBox.prototype.getContent=function(){return this.content_},InfoBox.prototype.getPosition=function(){return this.position_},InfoBox.prototype.getZIndex=function(){return this.zIndex_},InfoBox.prototype.getVisible=function(){return void 0!==this.getMap()&&null!==this.getMap()&&!this.isHidden_},InfoBox.prototype.getWidth=function(){var t=null;return this.div_&&(t=this.div_.offsetWidth),t},InfoBox.prototype.getHeight=function(){var t=null;return this.div_&&(t=this.div_.offsetHeight),t},InfoBox.prototype.show=function(){this.isHidden_=!1,this.div_&&(this.div_.style.visibility="visible")},InfoBox.prototype.hide=function(){this.isHidden_=!0,this.div_&&(this.div_.style.visibility="hidden")},InfoBox.prototype.open=function(t,i){var e=this;i&&(this.setPosition(i.getPosition()),this.moveListener_=google.maps.event.addListener(i,"position_changed",function(){e.setPosition(this.getPosition())})),this.setMap(t),this.div_&&this.panBox_(this.disableAutoPan_)},InfoBox.prototype.close=function(){var t;if(this.closeListener_&&(google.maps.event.removeListener(this.closeListener_),this.closeListener_=null),this.eventListeners_){for(t=0;t<this.eventListeners_.length;t++)google.maps.event.removeListener(this.eventListeners_[t]);this.eventListeners_=null}this.moveListener_&&(google.maps.event.removeListener(this.moveListener_),this.moveListener_=null),this.contextListener_&&(google.maps.event.removeListener(this.contextListener_),this.contextListener_=null),this.setMap(null)};
+ */
+/*!
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+function InfoBox(opt_opts) {
+  opt_opts = opt_opts || {};
+  google.maps.OverlayView.apply(this, arguments);
+  this.content_ = opt_opts.content || "";
+  this.disableAutoPan_ = opt_opts.disableAutoPan || !1;
+  this.maxWidth_ = opt_opts.maxWidth || 0;
+  this.pixelOffset_ = opt_opts.pixelOffset || new google.maps.Size(0, 0);
+  this.position_ = opt_opts.position || new google.maps.LatLng(0, 0);
+  this.zIndex_ = opt_opts.zIndex || null;
+  this.boxClass_ = opt_opts.boxClass || "infoBox";
+  this.boxStyle_ = opt_opts.boxStyle || {};
+  this.closeBoxMargin_ = opt_opts.closeBoxMargin || "2px";
+  this.closeBoxURL_ =
+    opt_opts.closeBoxURL || "//www.google.com/intl/en_us/mapfiles/close.gif";
+  if (opt_opts.closeBoxURL === "") {
+    this.closeBoxURL_ = "";
+  }
+  this.closeBoxTitle_ = opt_opts.closeBoxTitle || " Close ";
+  this.infoBoxClearance_ =
+    opt_opts.infoBoxClearance || new google.maps.Size(1, 1);
+  if (typeof opt_opts.visible === "undefined") {
+    if (typeof opt_opts.isHidden === "undefined") {
+      opt_opts.visible = !0;
+    } else {
+      opt_opts.visible = !opt_opts.isHidden;
+    }
+  }
+  this.isHidden_ = !opt_opts.visible;
+  this.alignBottom_ = opt_opts.alignBottom || !1;
+  this.pane_ = opt_opts.pane || "floatPane";
+  this.enableEventPropagation_ = opt_opts.enableEventPropagation || !1;
+  this.div_ = null;
+  this.closeListener_ = null;
+  this.moveListener_ = null;
+  this.contextListener_ = null;
+  this.eventListeners_ = null;
+  this.fixedWidthSet_ = null;
+}
+InfoBox.prototype = new google.maps.OverlayView();
+InfoBox.prototype.createInfoBoxDiv_ = function () {
+  var i;
+  var events;
+  var bw;
+  var me = this;
+  var cancelHandler = function (e) {
+    e.cancelBubble = !0;
+    if (e.stopPropagation) {
+      e.stopPropagation();
+    }
+  };
+  var ignoreHandler = function (e) {
+    e.returnValue = !1;
+    if (e.preventDefault) {
+      e.preventDefault();
+    }
+    if (!me.enableEventPropagation_) {
+      cancelHandler(e);
+    }
+  };
+  if (!this.div_) {
+    this.div_ = document.createElement("div");
+    this.setBoxStyle_();
+    if (typeof this.content_.nodeType === "undefined") {
+      this.div_.innerHTML = this.getCloseBoxImg_() + this.content_;
+    } else {
+      this.div_.innerHTML = this.getCloseBoxImg_();
+      this.div_.appendChild(this.content_);
+    }
+    this.getPanes()[this.pane_].appendChild(this.div_);
+    this.addClickHandler_();
+    if (this.div_.style.width) {
+      this.fixedWidthSet_ = !0;
+    } else {
+      if (this.maxWidth_ !== 0 && this.div_.offsetWidth > this.maxWidth_) {
+        this.div_.style.width = this.maxWidth_;
+        this.div_.style.overflow = "auto";
+        this.fixedWidthSet_ = !0;
+      } else {
+        bw = this.getBoxWidths_();
+        this.div_.style.width =
+          this.div_.offsetWidth - bw.left - bw.right + "px";
+        this.fixedWidthSet_ = !1;
+      }
+    }
+    this.panBox_(this.disableAutoPan_);
+    if (!this.enableEventPropagation_) {
+      this.eventListeners_ = [];
+      events = [
+        "mousedown",
+        "mouseover",
+        "mouseout",
+        "mouseup",
+        "click",
+        "dblclick",
+        "touchstart",
+        "touchend",
+        "touchmove",
+      ];
+      for (i = 0; i < events.length; i++) {
+        this.div_.addEventListener(events[i], cancelHandler);
+      }
+      this.eventListeners_.push(
+        this.div_.addEventListener("mouseover", function (e) {
+          this.style.cursor = "default";
+        }),
+      );
+    }
+    this.contextListener_ = this.div_.addEventListener(
+      "contextmenu",
+      ignoreHandler,
+    );
+    google.maps.event.trigger(this, "domready");
+  }
+};
+InfoBox.prototype.getCloseBoxImg_ = function () {
+  var img = "";
+  if (this.closeBoxURL_ !== "") {
+    img = "<img";
+    img += " src='" + this.closeBoxURL_ + "'";
+    img += " align=right";
+    img += " title='" + this.closeBoxTitle_ + "'";
+    img += " style='";
+    img += " position: relative;";
+    img += " cursor: pointer;";
+    img += " margin: " + this.closeBoxMargin_ + ";";
+    img += "'>";
+  }
+  return img;
+};
+InfoBox.prototype.addClickHandler_ = function () {
+  var closeBox;
+  if (this.closeBoxURL_ !== "") {
+    closeBox = this.div_.firstChild;
+    this.closeListener_ = closeBox.addEventListener(
+      "click",
+      this.getCloseClickHandler_(),
+    );
+  } else {
+    this.closeListener_ = null;
+  }
+};
+InfoBox.prototype.getCloseClickHandler_ = function () {
+  var me = this;
+  return function (e) {
+    e.cancelBubble = !0;
+    if (e.stopPropagation) {
+      e.stopPropagation();
+    }
+    google.maps.event.trigger(me, "closeclick");
+    me.close();
+  };
+};
+InfoBox.prototype.panBox_ = function (disablePan) {
+  var map;
+  var bounds;
+  var xOffset = 0,
+    yOffset = 0;
+  if (!disablePan) {
+    map = this.getMap();
+    if (map instanceof google.maps.Map) {
+      if (!map.getBounds().contains(this.position_)) {
+        map.setCenter(this.position_);
+      }
+      var iwOffsetX = this.pixelOffset_.width;
+      var iwOffsetY = this.pixelOffset_.height;
+      var iwWidth = this.div_.offsetWidth;
+      var iwHeight = this.div_.offsetHeight;
+      var padX = this.infoBoxClearance_.width;
+      var padY = this.infoBoxClearance_.height;
+      if (map.panToBounds.length == 2) {
+        var padding = { left: 0, right: 0, top: 0, bottom: 0 };
+        padding.left = -iwOffsetX + padX;
+        padding.right = iwOffsetX + iwWidth + padX;
+        if (this.alignBottom_) {
+          padding.top = -iwOffsetY + padY + iwHeight;
+          padding.bottom = iwOffsetY + padY;
+        } else {
+          padding.top = -iwOffsetY + padY;
+          padding.bottom = iwOffsetY + iwHeight + padY;
+        }
+        map.panToBounds(new google.maps.LatLngBounds(this.position_), padding);
+      } else {
+        var mapDiv = map.getDiv();
+        var mapWidth = mapDiv.offsetWidth;
+        var mapHeight = mapDiv.offsetHeight;
+        var pixPosition = this.getProjection().fromLatLngToContainerPixel(
+          this.position_,
+        );
+        if (pixPosition.x < -iwOffsetX + padX) {
+          xOffset = pixPosition.x + iwOffsetX - padX;
+        } else if (pixPosition.x + iwWidth + iwOffsetX + padX > mapWidth) {
+          xOffset = pixPosition.x + iwWidth + iwOffsetX + padX - mapWidth;
+        }
+        if (this.alignBottom_) {
+          if (pixPosition.y < -iwOffsetY + padY + iwHeight) {
+            yOffset = pixPosition.y + iwOffsetY - padY - iwHeight;
+          } else if (pixPosition.y + iwOffsetY + padY > mapHeight) {
+            yOffset = pixPosition.y + iwOffsetY + padY - mapHeight;
+          }
+        } else {
+          if (pixPosition.y < -iwOffsetY + padY) {
+            yOffset = pixPosition.y + iwOffsetY - padY;
+          } else if (pixPosition.y + iwHeight + iwOffsetY + padY > mapHeight) {
+            yOffset = pixPosition.y + iwHeight + iwOffsetY + padY - mapHeight;
+          }
+        }
+        if (!(xOffset === 0 && yOffset === 0)) {
+          var c = map.getCenter();
+          map.panBy(xOffset, yOffset);
+        }
+      }
+    }
+  }
+};
+InfoBox.prototype.setBoxStyle_ = function () {
+  var i, boxStyle;
+  if (this.div_) {
+    this.div_.className = this.boxClass_;
+    this.div_.style.cssText = "";
+    boxStyle = this.boxStyle_;
+    for (i in boxStyle) {
+      if (boxStyle.hasOwnProperty(i)) {
+        this.div_.style[i] = boxStyle[i];
+      }
+    }
+    if (
+      typeof this.div_.style.WebkitTransform === "undefined" ||
+      (this.div_.style.WebkitTransform.indexOf("translateZ") === -1 &&
+        this.div_.style.WebkitTransform.indexOf("matrix") === -1)
+    ) {
+      this.div_.style.WebkitTransform = "translateZ(0)";
+    }
+    if (
+      typeof this.div_.style.opacity !== "undefined" &&
+      this.div_.style.opacity !== ""
+    ) {
+      this.div_.style.MsFilter =
+        '"progid:DXImageTransform.Microsoft.Alpha(Opacity=' +
+        this.div_.style.opacity * 100 +
+        ')"';
+      this.div_.style.filter =
+        "alpha(opacity=" + this.div_.style.opacity * 100 + ")";
+    }
+    this.div_.style.position = "absolute";
+    this.div_.style.visibility = "hidden";
+    if (this.zIndex_ !== null) {
+      this.div_.style.zIndex = this.zIndex_;
+    }
+  }
+};
+InfoBox.prototype.getBoxWidths_ = function () {
+  var computedStyle;
+  var bw = { top: 0, bottom: 0, left: 0, right: 0 };
+  var box = this.div_;
+  if (document.defaultView && document.defaultView.getComputedStyle) {
+    computedStyle = box.ownerDocument.defaultView.getComputedStyle(box, "");
+    if (computedStyle) {
+      bw.top = parseInt(computedStyle.borderTopWidth, 10) || 0;
+      bw.bottom = parseInt(computedStyle.borderBottomWidth, 10) || 0;
+      bw.left = parseInt(computedStyle.borderLeftWidth, 10) || 0;
+      bw.right = parseInt(computedStyle.borderRightWidth, 10) || 0;
+    }
+  } else if (document.documentElement.currentStyle) {
+    if (box.currentStyle) {
+      bw.top = parseInt(box.currentStyle.borderTopWidth, 10) || 0;
+      bw.bottom = parseInt(box.currentStyle.borderBottomWidth, 10) || 0;
+      bw.left = parseInt(box.currentStyle.borderLeftWidth, 10) || 0;
+      bw.right = parseInt(box.currentStyle.borderRightWidth, 10) || 0;
+    }
+  }
+  return bw;
+};
+InfoBox.prototype.onRemove = function () {
+  if (this.div_) {
+    this.div_.parentNode.removeChild(this.div_);
+    this.div_ = null;
+  }
+};
+InfoBox.prototype.draw = function () {
+  this.createInfoBoxDiv_();
+  var pixPosition = this.getProjection().fromLatLngToDivPixel(this.position_);
+  this.div_.style.left = pixPosition.x + this.pixelOffset_.width + "px";
+  if (this.alignBottom_) {
+    this.div_.style.bottom = -(pixPosition.y + this.pixelOffset_.height) + "px";
+  } else {
+    this.div_.style.top = pixPosition.y + this.pixelOffset_.height + "px";
+  }
+  if (this.isHidden_) {
+    this.div_.style.visibility = "hidden";
+  } else {
+    this.div_.style.visibility = "visible";
+  }
+};
+InfoBox.prototype.setOptions = function (opt_opts) {
+  if (typeof opt_opts.boxClass !== "undefined") {
+    this.boxClass_ = opt_opts.boxClass;
+    this.setBoxStyle_();
+  }
+  if (typeof opt_opts.boxStyle !== "undefined") {
+    this.boxStyle_ = opt_opts.boxStyle;
+    this.setBoxStyle_();
+  }
+  if (typeof opt_opts.content !== "undefined") {
+    this.setContent(opt_opts.content);
+  }
+  if (typeof opt_opts.disableAutoPan !== "undefined") {
+    this.disableAutoPan_ = opt_opts.disableAutoPan;
+  }
+  if (typeof opt_opts.maxWidth !== "undefined") {
+    this.maxWidth_ = opt_opts.maxWidth;
+  }
+  if (typeof opt_opts.pixelOffset !== "undefined") {
+    this.pixelOffset_ = opt_opts.pixelOffset;
+  }
+  if (typeof opt_opts.alignBottom !== "undefined") {
+    this.alignBottom_ = opt_opts.alignBottom;
+  }
+  if (typeof opt_opts.position !== "undefined") {
+    this.setPosition(opt_opts.position);
+  }
+  if (typeof opt_opts.zIndex !== "undefined") {
+    this.setZIndex(opt_opts.zIndex);
+  }
+  if (typeof opt_opts.closeBoxMargin !== "undefined") {
+    this.closeBoxMargin_ = opt_opts.closeBoxMargin;
+  }
+  if (typeof opt_opts.closeBoxURL !== "undefined") {
+    this.closeBoxURL_ = opt_opts.closeBoxURL;
+  }
+  if (typeof opt_opts.closeBoxTitle !== "undefined") {
+    this.closeBoxTitle_ = opt_opts.closeBoxTitle;
+  }
+  if (typeof opt_opts.infoBoxClearance !== "undefined") {
+    this.infoBoxClearance_ = opt_opts.infoBoxClearance;
+  }
+  if (typeof opt_opts.isHidden !== "undefined") {
+    this.isHidden_ = opt_opts.isHidden;
+  }
+  if (typeof opt_opts.visible !== "undefined") {
+    this.isHidden_ = !opt_opts.visible;
+  }
+  if (typeof opt_opts.enableEventPropagation !== "undefined") {
+    this.enableEventPropagation_ = opt_opts.enableEventPropagation;
+  }
+  if (this.div_) {
+    this.draw();
+  }
+};
+InfoBox.prototype.setContent = function (content) {
+  this.content_ = content;
+  if (this.div_) {
+    if (this.closeListener_) {
+      google.maps.event.removeListener(this.closeListener_);
+      this.closeListener_ = null;
+    }
+    if (!this.fixedWidthSet_) {
+      this.div_.style.width = "";
+    }
+    if (typeof content.nodeType === "undefined") {
+      this.div_.innerHTML = this.getCloseBoxImg_() + content;
+    } else {
+      this.div_.innerHTML = this.getCloseBoxImg_();
+      this.div_.appendChild(content);
+    }
+    if (!this.fixedWidthSet_) {
+      this.div_.style.width = this.div_.offsetWidth + "px";
+      if (typeof content.nodeType === "undefined") {
+        this.div_.innerHTML = this.getCloseBoxImg_() + content;
+      } else {
+        this.div_.innerHTML = this.getCloseBoxImg_();
+        this.div_.appendChild(content);
+      }
+    }
+    this.addClickHandler_();
+  }
+  google.maps.event.trigger(this, "content_changed");
+};
+InfoBox.prototype.setPosition = function (latlng) {
+  this.position_ = latlng;
+  if (this.div_) {
+    this.draw();
+  }
+  google.maps.event.trigger(this, "position_changed");
+};
+InfoBox.prototype.setZIndex = function (index) {
+  this.zIndex_ = index;
+  if (this.div_) {
+    this.div_.style.zIndex = index;
+  }
+  google.maps.event.trigger(this, "zindex_changed");
+};
+InfoBox.prototype.setVisible = function (isVisible) {
+  this.isHidden_ = !isVisible;
+  if (this.div_) {
+    this.div_.style.visibility = this.isHidden_ ? "hidden" : "visible";
+  }
+};
+InfoBox.prototype.getContent = function () {
+  return this.content_;
+};
+InfoBox.prototype.getPosition = function () {
+  return this.position_;
+};
+InfoBox.prototype.getZIndex = function () {
+  return this.zIndex_;
+};
+InfoBox.prototype.getVisible = function () {
+  var isVisible;
+  if (typeof this.getMap() === "undefined" || this.getMap() === null) {
+    isVisible = !1;
+  } else {
+    isVisible = !this.isHidden_;
+  }
+  return isVisible;
+};
+InfoBox.prototype.getWidth = function () {
+  var width = null;
+  if (this.div_) {
+    width = this.div_.offsetWidth;
+  }
+  return width;
+};
+InfoBox.prototype.getHeight = function () {
+  var height = null;
+  if (this.div_) {
+    height = this.div_.offsetHeight;
+  }
+  return height;
+};
+InfoBox.prototype.show = function () {
+  this.isHidden_ = !1;
+  if (this.div_) {
+    this.div_.style.visibility = "visible";
+  }
+};
+InfoBox.prototype.hide = function () {
+  this.isHidden_ = !0;
+  if (this.div_) {
+    this.div_.style.visibility = "hidden";
+  }
+};
+InfoBox.prototype.open = function (map, anchor) {
+  var me = this;
+  if (anchor) {
+    this.setPosition(anchor.getPosition());
+    this.moveListener_ = google.maps.event.addListener(
+      anchor,
+      "position_changed",
+      function () {
+        me.setPosition(this.getPosition());
+      },
+    );
+  }
+  this.setMap(map);
+  if (this.div_) {
+    this.panBox_(this.disableAutoPan_);
+  }
+};
+InfoBox.prototype.close = function () {
+  var i;
+  if (this.closeListener_) {
+    google.maps.event.removeListener(this.closeListener_);
+    this.closeListener_ = null;
+  }
+  if (this.eventListeners_) {
+    for (i = 0; i < this.eventListeners_.length; i++) {
+      google.maps.event.removeListener(this.eventListeners_[i]);
+    }
+    this.eventListeners_ = null;
+  }
+  if (this.moveListener_) {
+    google.maps.event.removeListener(this.moveListener_);
+    this.moveListener_ = null;
+  }
+  if (this.contextListener_) {
+    google.maps.event.removeListener(this.contextListener_);
+    this.contextListener_ = null;
+  }
+  this.setMap(null);
+};
