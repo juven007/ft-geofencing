@@ -25,6 +25,109 @@ let is_edit = false;
 let is_circle = false;
 let circle_radius = 10;
 let circle_steps = 20;
+let circle_repeater = 1;
+
+const pSBC = (p, c0, c1, l) => {
+  let r,
+    g,
+    b,
+    P,
+    f,
+    t,
+    h,
+    i = parseInt,
+    m = Math.round,
+    a = typeof c1 == "string";
+  if (
+    typeof p != "number" ||
+    p < -1 ||
+    p > 1 ||
+    typeof c0 != "string" ||
+    (c0[0] != "r" && c0[0] != "#") ||
+    (c1 && !a)
+  )
+    return null;
+  console.log(pSBC);
+
+  if (!pSBC.pSBCr)
+    pSBC.pSBCr = (d) => {
+      let n = d.length,
+        x = {};
+      if (n > 9) {
+        ([r, g, b, a] = d = d.split(",")), (n = d.length);
+        if (n < 3 || n > 4) return null;
+        (x.r = i(r[3] == "a" ? r.slice(5) : r.slice(4))),
+          (x.g = i(g)),
+          (x.b = i(b)),
+          (x.a = a ? parseFloat(a) : -1);
+      } else {
+        if (n == 8 || n == 6 || n < 4) return null;
+        if (n < 6)
+          d =
+            "#" +
+            d[1] +
+            d[1] +
+            d[2] +
+            d[2] +
+            d[3] +
+            d[3] +
+            (n > 4 ? d[4] + d[4] : "");
+        d = i(d.slice(1), 16);
+        if (n == 9 || n == 5)
+          (x.r = (d >> 24) & 255),
+            (x.g = (d >> 16) & 255),
+            (x.b = (d >> 8) & 255),
+            (x.a = m((d & 255) / 0.255) / 1000);
+        else
+          (x.r = d >> 16), (x.g = (d >> 8) & 255), (x.b = d & 255), (x.a = -1);
+      }
+      return x;
+    };
+  (h = c0.length > 9),
+    (h = a ? (c1.length > 9 ? true : c1 == "c" ? !h : false) : h),
+    (f = pSBC.pSBCr(c0)),
+    (P = p < 0),
+    (t =
+      c1 && c1 != "c"
+        ? pSBC.pSBCr(c1)
+        : P
+          ? { r: 0, g: 0, b: 0, a: -1 }
+          : { r: 255, g: 255, b: 255, a: -1 }),
+    (p = P ? p * -1 : p),
+    (P = 1 - p);
+  if (!f || !t) return null;
+  if (l)
+    (r = m(P * f.r + p * t.r)),
+      (g = m(P * f.g + p * t.g)),
+      (b = m(P * f.b + p * t.b));
+  else
+    (r = m((P * f.r ** 2 + p * t.r ** 2) ** 0.5)),
+      (g = m((P * f.g ** 2 + p * t.g ** 2) ** 0.5)),
+      (b = m((P * f.b ** 2 + p * t.b ** 2) ** 0.5));
+  (a = f.a),
+    (t = t.a),
+    (f = a >= 0 || t >= 0),
+    (a = f ? (a < 0 ? t : t < 0 ? a : a * P + t * p) : 0);
+  if (h)
+    return (
+      "rgb" +
+      (f ? "a(" : "(") +
+      r +
+      "," +
+      g +
+      "," +
+      b +
+      (f ? "," + m(a * 1000) / 1000 : "") +
+      ")"
+    );
+  else
+    return (
+      "#" +
+      (4294967296 + r * 16777216 + g * 65536 + b * 256 + (f ? m(a * 255) : 0))
+        .toString(16)
+        .slice(1, f ? undefined : -2)
+    );
+};
 
 function initMap() {
   let location = new google.maps.LatLng(-25.83857063120318, 133.417046875);
@@ -414,6 +517,10 @@ function initMap() {
     title_control.innerHTML = "Add new polygon";
     form_control.appendChild(title_control);
 
+    // let form_element_control = document.createElement('form');
+    // form_element_control.name = 'polygon-form';
+    // form_control.appendChild(form_element_control);
+
     // Type Form Control
     let type_control = document.createElement("div");
     type_control.className = "each-wrapper";
@@ -498,7 +605,7 @@ function initMap() {
     let input_radius = document.createElement("input");
     input_radius.type = "text";
     input_radius.value = circle_radius;
-    input_radius.className = "text-style w-80";
+    input_radius.className = "text-style w-50";
     input_radius.id = "circle-radius";
     input_radius.title = "Enter radius of the circle";
     radius_control.appendChild(input_radius);
@@ -520,10 +627,27 @@ function initMap() {
     let input_steps = document.createElement("input");
     input_steps.type = "text";
     input_steps.value = circle_steps;
-    input_steps.className = "text-style w-80";
+    input_steps.className = "text-style w-50";
     input_steps.id = "steps-radius";
     input_steps.title = "Enter circle steps";
     steps_control.appendChild(input_steps);
+
+    let repeater_control = document.createElement("div");
+    repeater_control.className = "flex-side-by-side";
+    circle_options_control.appendChild(repeater_control);
+
+    let input_repeater_lbl = document.createElement("div");
+    input_repeater_lbl.innerHTML = "Repeat";
+    input_repeater_lbl.className = "polygon-lbl text-right";
+    repeater_control.appendChild(input_repeater_lbl);
+
+    let input_repeater = document.createElement("input");
+    input_repeater.type = "text";
+    input_repeater.value = 1;
+    input_repeater.className = "text-style w-50";
+    input_repeater.id = "circle-repeater";
+    input_repeater.title = "Enter number of repeat";
+    repeater_control.appendChild(input_repeater);
 
     // Name Form Control
     let name_control = document.createElement("div");
@@ -540,7 +664,6 @@ function initMap() {
     input_name.className = "text-style";
     input_name.id = "polygon-name";
     input_name.title = "Enter polygon name";
-    input_name.setAttribute("autocomplete", "off");
     name_control.appendChild(input_name);
 
     // Color Form Control
@@ -599,10 +722,14 @@ function initMap() {
           document.querySelector("#steps-radius").value.trim() != ""
             ? document.querySelector("#steps-radius").value.trim()
             : 10;
+        circle_repeater =
+          document.querySelector("#circle-repeater").value.trim() != ""
+            ? document.querySelector("#circle-repeater").value.trim()
+            : 1;
 
         if (is_edit && active_polygon) {
           console.log("edit");
-          console.log(active_polygon);
+          // console.log(active_polygon);
           active_polygon.setOptions(
             getNewPolygonOptions(
               active_polygon.index,
@@ -615,29 +742,148 @@ function initMap() {
           processPolygonLabel(map, active_polygon);
         } else {
           console.log("add");
+          console.log(is_circle);
           if (is_circle) {
             // CIRCLE
-            let map_clicked_listener = google.maps.event.addListener(
-              map,
-              "click",
-              function (event) {
-                let tpoint = [event.latLng.lat(), event.latLng.lng()];
-                let new_shape_coords = makeCirclePolygonCoords(
-                  tpoint,
-                  circle_radius,
-                  circle_steps,
-                );
-                let _new_polygon = new google.maps.Polygon(
-                  getNewPolygonOptions(null, polygon_color, null, polygon_name),
-                );
-                _new_polygon.setOptions({ paths: new_shape_coords });
-                _new_polygon.setMap(map);
-                addNewPolygon(_new_polygon);
-                document.querySelector("#add-btn").removeAttribute("disabled");
-                editMode(true);
-                map_clicked_listener.remove();
-              },
-            );
+            if (circle_repeater > 1) {
+              let map_clicked_listener = google.maps.event.addListener(
+                map,
+                "click",
+                function (event) {
+                  let tpoint = [event.latLng.lat(), event.latLng.lng()];
+                  let r_tpoint = tpoint.reverse();
+                  let n = circle_repeater;
+                  let rad = circle_radius;
+                  let max_rad = n * rad;
+                  let pol_ctr = n;
+                  while (max_rad > 0) {
+                    let circle = turf.flip(
+                      turf.circle(r_tpoint, max_rad, {
+                        steps: circle_steps,
+                        units: "kilometers",
+                      }),
+                    );
+                    // check first the max circle if it intersects with one of the current polygon if yes reshape the affected polygon first before creating other circles
+                    if (pol_ctr == n) {
+                      for (let i = 0; i < all_polygons.length; i++) {
+                        let affected_coords = getGmapCoordsToTurf(
+                          all_polygons[i],
+                        );
+                        let activeCoords = turf.getCoords(circle);
+                        let intersection_area = calcPolygonIntersection(
+                          activeCoords,
+                          affected_coords,
+                        );
+                        if (intersection_area) {
+                          if (intersection_area.length > 1) {
+                            for (let v = 0; v < intersection_area.length; v++) {
+                              reshapePolygon(
+                                map,
+                                intersection_area[v],
+                                null,
+                                i,
+                              );
+                            }
+                          } else {
+                            reshapePolygon(map, intersection_area, null, i);
+                          }
+                        }
+                      }
+                    }
+
+                    pol_ctr--;
+                    if (pol_ctr > 0) {
+                      // Donut Polygon
+                      let divider = createLineDivider(circle, max_rad); //create a divider polygon from the center of the cirle with the distance of the radiue in kilometers.
+                      let pacman_shape = turf.difference(
+                        circle,
+                        turf.polygon([divider]),
+                      );
+
+                      let next_polygon = turf.flip(
+                        turf.circle(r_tpoint, max_rad - rad, {
+                          steps: circle_steps,
+                          units: "kilometers",
+                        }),
+                      ); //get the next circle to remove from the pacman shape
+                      let newshape = turf.getCoords(
+                        turf.cleanCoords(
+                          turf.difference(pacman_shape, next_polygon),
+                        ),
+                      ); // calculate pacman shape minus the next polygon
+                      let new_shape_coords = getTurfCoordsToGmap(
+                        checkTurfLastCoordinates(newshape[0]),
+                      ); // convert the turf coords to gmap coords
+
+                      if (new_shape_coords.length > 3) {
+                        let _new_polygon = new google.maps.Polygon(
+                          getNewPolygonOptions(
+                            null,
+                            pSBC(pol_ctr / 10, polygon_color, false, false),
+                            null,
+                            polygon_name + "-" + pol_ctr,
+                          ),
+                        );
+                        _new_polygon.setOptions({ paths: new_shape_coords });
+                        _new_polygon.setMap(map);
+                        addNewPolygon(_new_polygon);
+                      }
+                    } else {
+                      // Solid circle the centerd polygon
+                      let new_shape_coords = getTurfCoordsToGmap(
+                        checkTurfLastCoordinates(turf.getCoords(circle)[0]),
+                      );
+                      let _new_polygon = new google.maps.Polygon(
+                        getNewPolygonOptions(
+                          null,
+                          pSBC(pol_ctr / 10, polygon_color, false, false),
+                          null,
+                          polygon_name + "-" + pol_ctr,
+                        ),
+                      );
+                      _new_polygon.setOptions({ paths: new_shape_coords });
+                      _new_polygon.setMap(map);
+                      addNewPolygon(_new_polygon);
+                    }
+                    max_rad = max_rad - rad;
+                  }
+                  document
+                    .querySelector("#add-btn")
+                    .removeAttribute("disabled");
+                  editMode(true);
+                  map_clicked_listener.remove();
+                },
+              );
+            } else {
+              let map_clicked_listener = google.maps.event.addListener(
+                map,
+                "click",
+                function (event) {
+                  let tpoint = [event.latLng.lat(), event.latLng.lng()];
+                  let new_shape_coords = makeCirclePolygonCoords(
+                    tpoint,
+                    circle_radius,
+                    circle_steps,
+                  );
+                  let _new_polygon = new google.maps.Polygon(
+                    getNewPolygonOptions(
+                      null,
+                      polygon_color,
+                      null,
+                      polygon_name,
+                    ),
+                  );
+                  _new_polygon.setOptions({ paths: new_shape_coords });
+                  _new_polygon.setMap(map);
+                  addNewPolygon(_new_polygon);
+                  document
+                    .querySelector("#add-btn")
+                    .removeAttribute("disabled");
+                  editMode(true);
+                  map_clicked_listener.remove();
+                },
+              );
+            }
           } else {
             // FREE SHAPE
             drawingManager.setDrawingMode(
@@ -736,6 +982,7 @@ function initMap() {
     polygon_name = "";
     circle_radius = 10;
     circle_steps = 20;
+    circle_repeater = 1;
     // document.querySelector('#free-shape').setAttribute('checked', true);
     // document.querySelector('#circle-shape').removeAttribute('checked');
     document.querySelector("#map-color").value = "";
@@ -772,6 +1019,7 @@ function initMap() {
    * @param newPolygon: Polygon Object to add in the Polygon list Array
    */
   function addNewPolygon(newPolygon) {
+    clearAllSelection();
     all_polygons.push(newPolygon);
     initPolygons();
     active_polygon = newPolygon;
@@ -806,11 +1054,7 @@ function initMap() {
     if (polygon && polygon.lbl) {
       polygon.lbl.close();
     }
-    let cur_coords = [
-      getCoords(polygon).map((coord) => {
-        return [coord.lat, coord.lng];
-      }),
-    ];
+    let cur_coords = getGmapCoordsToTurf(polygon);
     let center_coords = turf.getCoords(
       turf.centerOfMass(turf.polygon(checkLastCoords(cur_coords))),
     );
@@ -881,9 +1125,14 @@ function initMap() {
     if (active_polygon) {
       for (let i = 0; i < all_polygons.length; i++) {
         if (i !== active_polygon.index) {
+          let affected_coords = getGmapCoordsToTurf(all_polygons[i]);
+          let activeCoords = getGmapCoordsToTurf(
+            all_polygons[active_polygon.index],
+          );
+
           let intersection_area = calcPolygonIntersection(
-            active_polygon.index,
-            i,
+            activeCoords,
+            affected_coords,
           );
           if (intersection_area) {
             if (intersection_area.length > 1) {
@@ -919,23 +1168,80 @@ function initMap() {
   }
 
   /**
+   * Get converted coords from Gmap to Turf format
+   * @param: polygon (Polygon) object Gmap Polygon
+   */
+  function getGmapCoordsToTurf(polygon) {
+    return [
+      getCoords(polygon).map((coord) => {
+        return [coord.lat, coord.lng];
+      }),
+    ];
+  }
+
+  /**
+   * Get converted coords from Turf to Gmap format
+   * @param: turf_coords (Polygon) object Turf Polygon
+   */
+  function getTurfCoordsToGmap(turf_coords) {
+    return turf_coords.map((item) => {
+      return { lat: item[0], lng: item[1] };
+    });
+  }
+
+  /**
+   * Check Turf Last Coordinates. Remove the last item if it's the same with first item
+   * @param: coords_list Array Turf Coordinates array
+   */
+  function checkTurfLastCoordinates(coords_list) {
+    let coords_storage = [];
+    return coords_list.filter((coords) => {
+      let _tempcoords = coords[0] + coords[1];
+      if (!coords_storage.includes(_tempcoords)) {
+        coords_storage.push(_tempcoords);
+        return coords;
+      }
+    });
+  }
+
+  /**
+   * Compute distance from the center of the polygon to the given radius and create a rectangle line like polygon to be use to create a donut like polygon
+   * @param: circle (Polygon) object Turf polygon
+   * @param: rad Number radius from the center of the polygon
+   */
+  function createLineDivider(circle, rad) {
+    let divider = [];
+    let center_of_circle = turf.centerOfMass(circle);
+    divider.push(turf.getCoord(center_of_circle));
+    var destination = turf.flip(
+      turf.rhumbDestination(turf.flip(center_of_circle), rad, 90, {
+        units: "kilometers",
+      }),
+    );
+    divider.push(turf.getCoord(destination));
+    var destination_1 = turf.flip(
+      turf.rhumbDestination(turf.flip(destination), 0.1, 180, {
+        units: "kilometers",
+      }),
+    );
+    divider.push(turf.getCoord(destination_1));
+    var destination_2 = turf.flip(
+      turf.rhumbDestination(turf.flip(destination_1), rad, -90, {
+        units: "kilometers",
+      }),
+    );
+    divider.push(turf.getCoord(destination_2));
+    divider.push(turf.getCoord(center_of_circle));
+    return divider;
+  }
+
+  /**
    * Calculate and return the intersection coordinates
-   * @param active_pol: (Numeric) index of the active polygon
-   * @param affected_pol: (Numeric) index of the affected polygon where the active polygon overlap
+   * @param activeCoords: (Polygon) object of the active polygon
+   * @param affected_coords: (Polygon) object of the affected polygon where the active polygon overlap
    * @return Array of intersection coordinates
    */
-  function calcPolygonIntersection(active_pol, affected_pol) {
-    let affected_coords = [
-      getCoords(all_polygons[affected_pol]).map((coord) => {
-        return [coord.lat, coord.lng];
-      }),
-    ];
-
-    let activeCoords = [
-      getCoords(all_polygons[active_pol]).map((coord) => {
-        return [coord.lat, coord.lng];
-      }),
-    ];
+  function calcPolygonIntersection(activeCoords, affected_coords) {
     let poly1 = turf.polygon(checkLastCoords(affected_coords));
     let poly2 = turf.polygon(checkLastCoords(activeCoords));
     let intersection = turf.intersect(poly1, poly2);
@@ -958,23 +1264,17 @@ function initMap() {
     active_polygon_index,
     affected_polygon_index,
   ) {
-    let affected_coords = [
-      getCoords(all_polygons[affected_polygon_index]).map((coord) => {
-        return [coord.lat, coord.lng];
-      }),
-    ];
-
+    let affected_coords = getGmapCoordsToTurf(
+      all_polygons[affected_polygon_index],
+    );
     let affected_polygon = turf.polygon(checkLastCoords(affected_coords));
+
     let intersection_polygon = turf.polygon(intersection_area);
-    // let newshape = turf.getCoords(
-    //   turf.difference(affected_polygon, intersection_polygon),
-    // );
+    // let newshape = turf.getCoords(turf.difference(affected_polygon, intersection_polygon));
     let newshape = turf.getCoords(
       turf.cleanCoords(turf.difference(affected_polygon, intersection_polygon)),
     );
-    let new_shape_coords = newshape[0].map((item) => {
-      return { lat: item[0], lng: item[1] };
-    });
+    let new_shape_coords = getTurfCoordsToGmap(newshape[0]);
 
     if (new_shape_coords.length > 3) {
       all_polygons[affected_polygon_index].setPath(new_shape_coords);
