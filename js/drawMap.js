@@ -27,6 +27,8 @@ let is_circle = false;
 let circle_radius = 10;
 let circle_steps = 20;
 let circle_repeater = 1;
+let fatal_error = 0;
+const temp_all_polygon = [];
 
 function initMap() {
   let location = new google.maps.LatLng(-25.83857063120318, 133.417046875);
@@ -252,6 +254,7 @@ function initMap() {
       });
       window["gmap_polygon" + p].setMap(map);
       all_polygons.push(window["gmap_polygon" + p]);
+      temp_all_polygon.push(window["gmap_polygon" + p]);
     }
     initPolygons();
   }
@@ -281,10 +284,23 @@ function initMap() {
     function (event) {
       var newPolygon = event.overlay;
       // newShape.type = event.type;
-      addNewPolygon(newPolygon);
+      console.log(getCoords(newPolygon).length > 3);
+      if(getCoords(newPolygon).length > 3) {
+        addNewPolygon(newPolygon);
+        if(fatal_error > 0) {
+          editMode(false);
+        } else {
+          editMode(true);
+        }
+      } else {
+        alert('Invalid Polygon! Polygon should be atleast 4 points');
+        newPolygon.setMap(null);
+
+        editMode(false);
+      }
       drawingManager.setDrawingMode(null);
       document.querySelector("#add-btn").removeAttribute("disabled");
-      editMode(true);
+
     },
   );
 
@@ -324,6 +340,7 @@ function initMap() {
     add_ui_control.appendChild(add_ui_btn);
 
     add_ui_btn.addEventListener("click", function () {
+      fatal_error = 0;
       is_edit = false;
       clearAllSelection();
       editMode(false);
@@ -655,6 +672,7 @@ function initMap() {
                   let rad = circle_radius;
                   let max_rad = n * rad;
                   let pol_ctr = n;
+                  fatal_error = 0;
                   while (max_rad > 0) {
                     let circle = turf.flip(
                       turf.circle(r_tpoint, max_rad, {
@@ -665,90 +683,66 @@ function initMap() {
                     // check first the max circle if it intersects with one of the current polygon if yes reshape the affected polygon first before creating other circles
                     if (pol_ctr == n) {
                       for (let i = 0; i < all_polygons.length; i++) {
-                        let affected_coords = getGmapCoordsToTurf(
-                          all_polygons[i],
-                        );
-                        let activeCoords = turf.getCoords(circle);
-                        let intersection_area = calcPolygonIntersection(
-                          activeCoords,
-                          affected_coords,
-                        );
-                        if (intersection_area) {
-                          if (intersection_area.length > 1) {
-                            for (let v = 0; v < intersection_area.length; v++) {
-                              reshapePolygon(
-                                map,
-                                intersection_area[v],
-                                null,
-                                i,
-                              );
+                        if(fatal_error == 0) {
+                          let affected_coords = getGmapCoordsToTurf(all_polygons[i]);
+                          let activeCoords = turf.getCoords(circle);
+                          let intersection_area = calcPolygonIntersection(activeCoords, affected_coords);
+  
+                          if (intersection_area) {
+                            if (intersection_area.length > 1) {
+                              for (let v = 0; v < intersection_area.length; v++) {
+                                let rsult = reshapePolygon(map, intersection_area[v], null, i);
+                                if(!rsult) fatal_error++;
+                              }
+                            } else {
+                              let rsult = reshapePolygon(map, intersection_area, null, i);
+                              if(!rsult) fatal_error++;
                             }
-                          } else {
-                            reshapePolygon(map, intersection_area, null, i);
                           }
                         }
                       }
                     }
 
-                    pol_ctr--;
-                    if (pol_ctr > 0) {
-                      // Donut Polygon
-                      let divider = createLineDivider(circle, max_rad); //create a divider polygon from the center of the cirle with the distance of the radiue in kilometers.
-                      let pacman_shape = turf.difference(
-                        circle,
-                        turf.polygon([divider]),
-                      );
-
-                      let next_polygon = turf.flip(
-                        turf.circle(r_tpoint, max_rad - rad, {
-                          steps: circle_steps,
-                          units: "kilometers",
-                        }),
-                      ); //get the next circle to remove from the pacman shape
-                      let newshape = turf.getCoords(
-                        turf.cleanCoords(
-                          turf.difference(pacman_shape, next_polygon),
-                        ),
-                      ); // calculate pacman shape minus the next polygon
-                      let new_shape_coords = getTurfCoordsToGmap(
-                        checkTurfLastCoordinates(newshape[0]),
-                      ); // convert the turf coords to gmap coords
-
-                      if (new_shape_coords.length > 3) {
+                    if (fatal_error > 0) {
+                      alert('Some of the polygons can cause other polygons to break. Please try again to other area');
+                      // for (let i = 0; i < temp_all_polygon.length; i++) {
+                      //   console.log(getCoords(temp_all_polygon[i]));
+                      // }
+                      break;
+  
+                    } else {
+                      pol_ctr--;
+                      if (pol_ctr > 0) {
+                        // Donut Polygon
+                        let divider = createLineDivider(circle, max_rad); //create a divider polygon from the center of the cirle with the distance of the radiue in kilometers.
+                        let pacman_shape = turf.difference(circle, turf.polygon([divider]));
+  
+                        let next_polygon = turf.flip(turf.circle(r_tpoint, max_rad - rad, { steps: circle_steps, units: 'kilometers' })); //get the next circle to remove from the pacman shape
+                        let newshape = turf.getCoords(turf.cleanCoords(turf.difference(pacman_shape, next_polygon))); // calculate pacman shape minus the next polygon
+                        let new_shape_coords = getTurfCoordsToGmap(checkTurfLastCoordinates(newshape[0])); // convert the turf coords to gmap coords
+  
+                        if (new_shape_coords.length > 3) {
+                          let _new_polygon = new google.maps.Polygon(
+                            getNewPolygonOptions(null, pSBC(pol_ctr / 10, polygon_color, false, false), null, polygon_name + '-' + pol_ctr),
+                          );
+                          _new_polygon.setOptions({ paths: new_shape_coords });
+                          _new_polygon.setMap(map);
+                          addNewPolygon(_new_polygon);
+                        }
+                      } else {
+                        // Solid circle the centerd polygon
+                        let new_shape_coords = getTurfCoordsToGmap(checkTurfLastCoordinates(turf.getCoords(circle)[0]));
                         let _new_polygon = new google.maps.Polygon(
-                          getNewPolygonOptions(
-                            null,
-                            pSBC(pol_ctr / 15, polygon_color, false, true),
-                            null,
-                            polygon_name + "-" + pol_ctr,
-                          ),
+                          getNewPolygonOptions(null, pSBC(pol_ctr / 10, polygon_color, false, false), null, polygon_name + '-' + pol_ctr),
                         );
                         _new_polygon.setOptions({ paths: new_shape_coords });
                         _new_polygon.setMap(map);
                         addNewPolygon(_new_polygon);
                       }
-                    } else {
-                      // Solid circle the centerd polygon
-                      let new_shape_coords = getTurfCoordsToGmap(
-                        checkTurfLastCoordinates(turf.getCoords(circle)[0]),
-                      );
-                      let _new_polygon = new google.maps.Polygon(
-                        getNewPolygonOptions(
-                          null,
-                          pSBC(pol_ctr / 15, polygon_color, false, true),
-                          null,
-                          polygon_name + "-" + pol_ctr,
-                        ),
-                      );
-                      _new_polygon.setOptions({ paths: new_shape_coords });
-                      _new_polygon.setMap(map);
-                      addNewPolygon(_new_polygon);
                     }
                     max_rad = max_rad - rad;
                   }
-                  document
-                    .querySelector("#add-btn")
-                    .removeAttribute("disabled");
+                  document.querySelector("#add-btn").removeAttribute("disabled");
                   editMode(true);
                   map_clicked_listener.remove();
                 },
@@ -775,9 +769,7 @@ function initMap() {
                   _new_polygon.setOptions({ paths: new_shape_coords });
                   _new_polygon.setMap(map);
                   addNewPolygon(_new_polygon);
-                  document
-                    .querySelector("#add-btn")
-                    .removeAttribute("disabled");
+                  document.querySelector("#add-btn").removeAttribute("disabled");
                   editMode(true);
                   map_clicked_listener.remove();
                 },
@@ -903,13 +895,9 @@ function initMap() {
     } else {
       document.querySelector("#type-control").style = "display: flex";
 
-      document.querySelector("#cicle-options").style = is_circle
-        ? "display: flex"
-        : "display: none";
+      document.querySelector("#cicle-options").style = is_circle ? "display: flex" : "display: none";
       document.querySelector("#edit-btn").setAttribute("disabled", "disabled");
-      document
-        .querySelector("#remove-btn")
-        .setAttribute("disabled", "disabled");
+      document.querySelector("#remove-btn").setAttribute("disabled", "disabled");
     }
   }
 
@@ -920,28 +908,34 @@ function initMap() {
   function addNewPolygon(newPolygon) {
     clearAllSelection();
     all_polygons.push(newPolygon);
+    temp_all_polygon.push(newPolygon);
     initPolygons();
     active_polygon = newPolygon;
     updatePolygons();
   }
 
   /**
-   * Delete selected Polygon if confirm returns to true
+   * Display Delete confirm popup. If confirm proceed to delete selected polygon
    */
   function deleteSelectedPolygon() {
     if (active_polygon) {
-      var result = confirm(
-        "Are you sure want to delete " + active_polygon.name + "?",
-      );
+      var result = confirm('Are you sure want to delete ' + active_polygon.name + '?');
       if (result) {
-        active_polygon.setMap(null); // remove selected polygon from the map
-        active_polygon.lbl.close(); // remove polygon label from the map
-        all_polygons.splice(active_polygon.index, 1); // remove the selected polygon from the main all_polygons array
-        initPolygons(); // initialize all the remaining polygons
-        active_polygon = null; // set active_polygon to null (no current selected)
-        editMode(false);
+        processDelete();
       }
     }
+  }
+
+  /**
+   * Remove the active polygon from the map and in the list
+   */
+  function processDelete() {
+    active_polygon.setMap(null); // remove selected polygon from the map
+    active_polygon.lbl.close(); // remove polygon label from the map
+    all_polygons.splice(active_polygon.index, 1); // remove the selected polygon from the main all_polygons array
+    initPolygons(); // initialize all the remaining polygons
+    active_polygon = null; // set active_polygon to null (no current selected)
+    editMode(false);
   }
 
   /**
@@ -1025,23 +1019,13 @@ function initMap() {
       for (let i = 0; i < all_polygons.length; i++) {
         if (i !== active_polygon.index) {
           let affected_coords = getGmapCoordsToTurf(all_polygons[i]);
-          let activeCoords = getGmapCoordsToTurf(
-            all_polygons[active_polygon.index],
-          );
+          let activeCoords = getGmapCoordsToTurf(all_polygons[active_polygon.index]);
 
-          let intersection_area = calcPolygonIntersection(
-            activeCoords,
-            affected_coords,
-          );
+          let intersection_area = calcPolygonIntersection(activeCoords, affected_coords);
           if (intersection_area) {
             if (intersection_area.length > 1) {
               for (let v = 0; v < intersection_area.length; v++) {
-                reshapePolygon(
-                  map,
-                  intersection_area[v],
-                  active_polygon.index,
-                  i,
-                );
+                reshapePolygon(map, intersection_area[v], active_polygon.index, i);
               }
             } else {
               reshapePolygon(map, intersection_area, active_polygon.index, i);
@@ -1064,6 +1048,7 @@ function initMap() {
       all_polygons[i].setEditable(false);
       all_polygons[i].setOptions({ strokeWeight: 2, fillOpacity: 0.8 });
     }
+    active_polygon = null
   }
 
   /**
@@ -1157,40 +1142,46 @@ function initMap() {
    * @param active_polygon_index: (Numeric) index of the active polygon incase in need to do something
    * @param affected_polygon_index: (Numeric) index of the affected polygon to update and redraw
    */
-  function reshapePolygon(
-    map,
-    intersection_area,
-    active_polygon_index,
-    affected_polygon_index,
-  ) {
-    let affected_coords = getGmapCoordsToTurf(
-      all_polygons[affected_polygon_index],
-    );
+  function reshapePolygon(map, intersection_area, active_polygon_index, affected_polygon_index) {
+    let is_success = true;
+    let affected_coords = getGmapCoordsToTurf(all_polygons[affected_polygon_index]);
     let affected_polygon = turf.polygon(checkLastCoords(affected_coords));
 
     let intersection_polygon = turf.polygon(intersection_area);
     // let newshape = turf.getCoords(turf.difference(affected_polygon, intersection_polygon));
-    let newshape = turf.getCoords(
-      turf.cleanCoords(turf.difference(affected_polygon, intersection_polygon)),
-    );
-    let new_shape_coords = getTurfCoordsToGmap(newshape[0]);
+    if(turf.difference(affected_polygon, intersection_polygon)){
+      // let newshape = turf.getCoords(turf.difference(affected_polygon, intersection_polygon));
+      let newshape = turf.getCoords(turf.cleanCoords(turf.difference(affected_polygon, intersection_polygon)));
+      let new_shape_coords = getTurfCoordsToGmap(newshape[0]);
 
-    if (new_shape_coords.length > 3) {
-      all_polygons[affected_polygon_index].setPath(new_shape_coords);
-      all_polygons[affected_polygon_index].setMap(map);
-      initPolygons();
-    } else {
-      // catching drawing error
-      const wpath = active_polygon.getPath();
-      if (_previous) {
-        wpath.setAt(last_index, _previous);
+      if (new_shape_coords.length > 3) {
+        all_polygons[affected_polygon_index].setPath(new_shape_coords);
+        all_polygons[affected_polygon_index].setMap(map);
+        is_success = true;
+        initPolygons();
       } else {
-        wpath.removeAt(last_index);
+        // catching drawing error
+        if(active_polygon) {
+          const wpath = active_polygon.getPath();
+          if (_previous) {
+            wpath.setAt(last_index, _previous);
+          } else {
+            wpath.removeAt(last_index);
+          }
+          console.log('Error: Not possible! Will cause to divide the affected polygon causing setting map error');
+
+        }
+        is_success = false;
       }
-      console.log(
-        "Error: Not possible! Will cause to divide the affected polygon causing setting map error",
-      );
+    }else {
+      fatal_error++;
+      alert('Error: Drawing on top of the whole polygon is not allowed!');
+      if(active_polygon) {
+        processDelete();
+      }
+      is_success = false;
     }
+    return is_success;
   }
 
   /**
