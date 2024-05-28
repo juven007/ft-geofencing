@@ -29,6 +29,7 @@ let circle_steps = 20;
 let circle_repeater = 1;
 let fatal_error = 0;
 const temp_all_polygon = [];
+let points_edit = false;
 
 function initMap() {
   let location = new google.maps.LatLng(-25.83857063120318, 133.417046875);
@@ -284,7 +285,6 @@ function initMap() {
     function (event) {
       var newPolygon = event.overlay;
       // newShape.type = event.type;
-      console.log(getCoords(newPolygon).length > 3);
       if(getCoords(newPolygon).length > 3) {
         addNewPolygon(newPolygon);
         if(fatal_error > 0) {
@@ -292,6 +292,11 @@ function initMap() {
         } else {
           editMode(true);
         }
+        console.log('error->'+fatal_error);
+        if(fatal_error > 0) {
+          processDelete();
+          clearPolygonForm();
+        } 
       } else {
         alert('Invalid Polygon! Polygon should be atleast 4 points');
         newPolygon.setMap(null);
@@ -340,8 +345,7 @@ function initMap() {
     add_ui_control.appendChild(add_ui_btn);
 
     add_ui_btn.addEventListener("click", function () {
-      fatal_error = 0;
-      is_edit = false;
+
       clearAllSelection();
       editMode(false);
       add_ui_btn.setAttribute("disabled", "disabled");
@@ -742,8 +746,13 @@ function initMap() {
                     }
                     max_rad = max_rad - rad;
                   }
+                  if (fatal_error > 0) {
+                    clearPolygonForm();
+                    editMode(false);
+                  } else {
+                    editMode(true);
+                  }
                   document.querySelector("#add-btn").removeAttribute("disabled");
-                  editMode(true);
                   map_clicked_listener.remove();
                 },
               );
@@ -803,6 +812,7 @@ function initMap() {
     for (let j = 0; j < all_polygons.length; j++) {
       let cur_polygon = all_polygons[j];
       cur_polygon.setOptions({ index: j });
+
       cur_polygon.addListener("click", function (event) {
         // Set editable state to the current polygon clicked.
         clearAllSelection();
@@ -833,10 +843,7 @@ function initMap() {
           updatePolygons();
         });
 
-        google.maps.event.addListener(
-          paths.getAt(p),
-          "set_at",
-          (index, previous) => {
+        google.maps.event.addListener(paths.getAt(p), "set_at", (index, previous) => {
             // console.log('We set a point', paths.getAt(p));
             last_index = index;
             _previous = previous;
@@ -869,6 +876,11 @@ function initMap() {
    * Clear the Add and Edit Polygon Form
    */
   function clearPolygonForm() {
+    last_index = null;
+    _previous = null;
+    fatal_error = 0;
+    is_edit = false;
+
     polygon_color = "#ffff00";
     polygon_name = "";
     circle_radius = 10;
@@ -922,6 +934,7 @@ function initMap() {
       var result = confirm('Are you sure want to delete ' + active_polygon.name + '?');
       if (result) {
         processDelete();
+        clearPolygonForm();
       }
     }
   }
@@ -1017,6 +1030,7 @@ function initMap() {
   function updatePolygons() {
     if (active_polygon) {
       for (let i = 0; i < all_polygons.length; i++) {
+        if(fatal_error > 0) break;
         if (i !== active_polygon.index) {
           let affected_coords = getGmapCoordsToTurf(all_polygons[i]);
           let activeCoords = getGmapCoordsToTurf(all_polygons[active_polygon.index]);
@@ -1153,7 +1167,6 @@ function initMap() {
       // let newshape = turf.getCoords(turf.difference(affected_polygon, intersection_polygon));
       let newshape = turf.getCoords(turf.cleanCoords(turf.difference(affected_polygon, intersection_polygon)));
       let new_shape_coords = getTurfCoordsToGmap(newshape[0]);
-
       if (new_shape_coords.length > 3) {
         all_polygons[affected_polygon_index].setPath(new_shape_coords);
         all_polygons[affected_polygon_index].setMap(map);
@@ -1162,13 +1175,21 @@ function initMap() {
       } else {
         // catching drawing error
         if(active_polygon) {
-          const wpath = active_polygon.getPath();
-          if (_previous) {
-            wpath.setAt(last_index, _previous);
+          // alert('Error: Not possible! Will cause to divide the affected polygon and will cause uninspected results');
+          if(last_index) {
+            const wpath = active_polygon.getPath();
+            if (_previous) {
+              wpath.setAt(last_index, _previous);
+            } else {
+              wpath.removeAt(last_index);
+            }
+            console.log('Error: Not possible! Will cause to divide the affected polygon and will cause uninspected results');
           } else {
-            wpath.removeAt(last_index);
+            alert('Error: Not possible! Will cause to divide the affected polygon and will cause uninspected results');
+            console.log('Error: Not possible! Will cause to divide the affected polygon and will cause uninspected results');
+            fatal_error++;
           }
-          console.log('Error: Not possible! Will cause to divide the affected polygon causing setting map error');
+          
 
         }
         is_success = false;
