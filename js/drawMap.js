@@ -413,11 +413,11 @@ function initMap() {
 
     //to request update
     done_ui_control.addEventListener("click", function () {
-      clearAllSelection();
       if (active_polygon) {
         active_polygon.setOptions({ strokeWeight: 2, fillOpacity: 0.8 });
         editMode(false); // Disable the Edit and Remove button
       }
+      clearAllSelection();
       updateDatabase(all_polygons);
     });
     //END: DONE BUTTON CONTORL
@@ -1009,7 +1009,7 @@ function initMap() {
       }
 
       // Show delete option only if the coords of the polygon is greater than 3
-      if (polygon.getPath().getLength() > 3) {
+      if (polygon.getPath().getLength() > 4) {
         deleteMenu.open(map, polygon.getPath(), e.vertex);
       }
     });
@@ -1276,6 +1276,7 @@ function initMap() {
       width: "100px",
       fontWeight: "700",
       textShadow: "0px 0px 3px rgba(255,255,255,1)",
+      whiteSpace: "nowrap",
     };
   }
 
